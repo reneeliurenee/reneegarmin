@@ -41,7 +41,11 @@ Run once manually to complete Garmin MFA and create saved tokens:
 scripts/run_garmin_sync_once.sh
 ```
 
-After that, `launchd` runs it daily using the saved Garmin tokens.
+After that, `launchd` runs it daily using the saved Garmin tokens. The wrapper normally uses the repository virtualenv at `.venv/bin/python`. If that virtualenv is missing or cannot import `garminconnect`, it now falls back to a system `python3`/`python` that already has `garminconnect` installed. For an emergency run with another known-good interpreter, set `GARMIN_SYNC_PYTHON`:
+
+```bash
+GARMIN_SYNC_PYTHON=/path/to/python scripts/run_garmin_sync_once.sh
+```
 
 ## Recommended Daily Behavior
 
@@ -67,6 +71,21 @@ scripts/run_garmin_sync_once.sh --end-date 2026-06-03 --days 4
 
 # Increase activity history if a workout was uploaded late
 scripts/run_garmin_sync_once.sh --activity-lookback-days 30
+```
+
+If the automation log says `.venv/bin/python` is missing and PyPI is temporarily unavailable, first check whether your system Python already has the dependency installed:
+
+```bash
+python3 -c "import garminconnect; print('garminconnect ok')"
+scripts/run_garmin_sync_once.sh
+```
+
+If that import fails, repair the virtualenv when package access is available:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
 ## Google Drive Desktop Export
