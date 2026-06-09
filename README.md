@@ -82,6 +82,8 @@ scripts/run_garmin_sync_once.sh --email your_garmin_email@example.com
 
 On the configured macOS host, the script reads the password from Keychain. For a one-off non-macOS diagnostic run, provide `GARMIN_PASSWORD` or `--password` explicitly instead.
 
+If login fails with `ProxyError`, `403 Forbidden`, or `CONNECT tunnel failed`, the current network or proxy is blocking Garmin Connect login endpoints. Run the automation from the configured macOS host or another network that can reach Garmin, or allowlist Garmin Connect endpoints such as `sso.garmin.com` and `connect.garmin.com`.
+
 If that import fails, repair the virtualenv when package access is available:
 
 ```bash

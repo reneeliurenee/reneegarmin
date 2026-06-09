@@ -128,20 +128,33 @@ def login(email: str, password: str, tokenstore: Path) -> Garmin:
 
     tokenstore = tokenstore.expanduser()
     tokenstore.mkdir(parents=True, exist_ok=True)
-    garmin_signature = inspect.signature(Garmin)
-    if "prompt_mfa" in garmin_signature.parameters:
-        client = Garmin(email, password, prompt_mfa=prompt_mfa)
-        client.login(str(tokenstore))
-        return client
+    try:
+        garmin_signature = inspect.signature(Garmin)
+        if "prompt_mfa" in garmin_signature.parameters:
+            client = Garmin(email, password, prompt_mfa=prompt_mfa)
+            client.login(str(tokenstore))
+            return client
 
-    client = Garmin(email, password)
-    if any(tokenstore.iterdir()):
-        client.login(str(tokenstore))
-    else:
-        client.login()
-        if hasattr(client, "garth") and hasattr(client.garth, "dump"):
-            client.garth.dump(str(tokenstore))
-    return client
+        client = Garmin(email, password)
+        if any(tokenstore.iterdir()):
+            client.login(str(tokenstore))
+        else:
+            client.login()
+            if hasattr(client, "garth") and hasattr(client.garth, "dump"):
+                client.garth.dump(str(tokenstore))
+        return client
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        message = str(exc)
+        guidance = ""
+        if "ProxyError" in message or "403 Forbidden" in message or "CONNECT tunnel failed" in message:
+            guidance = (
+                " This appears to be a network/proxy block while connecting to Garmin. "
+                "Run the automation from a network that can reach sso.garmin.com/connect.garmin.com, "
+                "or update proxy allowlisting for Garmin Connect."
+            )
+        raise RuntimeError(f"Garmin login failed for account '{email}': {message}.{guidance}") from exc
 
 
 def safe_call(name: str, fn: Callable[[], Any]) -> Any:
