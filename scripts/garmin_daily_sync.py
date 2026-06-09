@@ -96,6 +96,13 @@ def json_default(value: Any) -> str:
 
 
 def get_keychain_password(email: str, service: str) -> str:
+    if shutil.which("security") is None:
+        raise RuntimeError(
+            "GARMIN_PASSWORD is not set and the macOS Keychain 'security' command is unavailable. "
+            "Run this automation on the configured macOS host, pass --password, or set GARMIN_PASSWORD "
+            f"for account '{email}'."
+        )
+
     result = subprocess.run(
         ["security", "find-generic-password", "-a", email, "-s", service, "-w"],
         check=False,
@@ -105,7 +112,7 @@ def get_keychain_password(email: str, service: str) -> str:
     if result.returncode != 0:
         raise RuntimeError(
             f"No Garmin password found in macOS Keychain for account '{email}' and service '{service}'. "
-            "Run scripts/install_launchd_garmin_sync.sh again."
+            "Run scripts/install_launchd_garmin_sync.sh again, pass --password, or set GARMIN_PASSWORD."
         )
     return result.stdout.rstrip("\n")
 
@@ -664,4 +671,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from None
