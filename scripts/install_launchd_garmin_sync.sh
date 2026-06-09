@@ -40,8 +40,24 @@ if [[ ! "$HOUR" =~ ^[0-9]{1,2}$ || ! "$MINUTE" =~ ^[0-9]{2}$ ]]; then
 fi
 
 python3 -m venv "$ROOT_DIR/.venv"
-"$ROOT_DIR/.venv/bin/python" -m pip install --upgrade pip
-"$ROOT_DIR/.venv/bin/python" -m pip install -r "$ROOT_DIR/requirements.txt"
+VENV_PYTHON="$ROOT_DIR/.venv/bin/python"
+if ! "$VENV_PYTHON" -m pip install --upgrade pip || ! "$VENV_PYTHON" -m pip install -r "$ROOT_DIR/requirements.txt"; then
+  if python3 - <<'PY' >/dev/null 2>&1
+import garminconnect  # noqa: F401
+PY
+  then
+    cat >&2 <<WARNING
+Warning: could not install dependencies into $ROOT_DIR/.venv, but system python3 can import garminconnect.
+The launchd wrapper will fall back to that system interpreter until the virtualenv can be repaired.
+WARNING
+  else
+    cat >&2 <<ERROR
+Error: could not install Garmin sync dependencies into $ROOT_DIR/.venv, and system python3 cannot import garminconnect.
+Repair package access and rerun this installer, or install dependencies in another interpreter and set GARMIN_SYNC_PYTHON when running manually.
+ERROR
+    exit 1
+  fi
+fi
 
 mkdir -p "$ROOT_DIR/logs" "$HOME/Library/LaunchAgents"
 
